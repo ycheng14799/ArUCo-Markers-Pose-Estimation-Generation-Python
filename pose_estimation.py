@@ -24,13 +24,11 @@ def pose_esitmation(frame, aruco_dict_type, matrix_coefficients, distortion_coef
     '''
 
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    cv2.aruco_dict = cv2.aruco.Dictionary_get(aruco_dict_type)
-    parameters = cv2.aruco.DetectorParameters_create()
+    aruco_dict = cv2.aruco.getPredefinedDictionary(aruco_dict_type)
+    #detector = cv2.aruco.ArucoDetector(arucoDict)
 
 
-    corners, ids, rejected_img_points = cv2.aruco.detectMarkers(gray, cv2.aruco_dict,parameters=parameters,
-        cameraMatrix=matrix_coefficients,
-        distCoeff=distortion_coefficients)
+    corners, ids, rejected_img_points = cv2.aruco.detectMarkers(gray, aruco_dict)
 
         # If markers are detected
     if len(corners) > 0:
@@ -42,13 +40,15 @@ def pose_esitmation(frame, aruco_dict_type, matrix_coefficients, distortion_coef
             cv2.aruco.drawDetectedMarkers(frame, corners) 
 
             # Draw Axis
-            cv2.aruco.drawAxis(frame, matrix_coefficients, distortion_coefficients, rvec, tvec, 0.01)  
+            cv2.drawFrameAxes(frame, matrix_coefficients, distortion_coefficients, rvec, tvec, 0.01)  
 
     return frame
 
 if __name__ == '__main__':
 
     ap = argparse.ArgumentParser()
+    ap.add_argument("-i", "--camera", required=True, help="Set to True if using webcam")
+    ap.add_argument("-v", "--video", help="Path to the video file")
     ap.add_argument("-k", "--K_Matrix", required=True, help="Path to calibration matrix (numpy file)")
     ap.add_argument("-d", "--D_Coeff", required=True, help="Path to distortion coefficients (numpy file)")
     ap.add_argument("-t", "--type", type=str, default="DICT_ARUCO_ORIGINAL", help="Type of ArUCo tag to detect")
@@ -66,8 +66,14 @@ if __name__ == '__main__':
     k = np.load(calibration_matrix_path)
     d = np.load(distortion_coefficients_path)
 
-    video = cv2.VideoCapture(0)
-    time.sleep(2.0)
+    if args["camera"].lower() == "true":
+	    video = cv2.VideoCapture(0)
+	    time.sleep(2.0)
+    else:
+	    if args["video"] is None:
+		    print("[Error] Video file location is not provided")
+		    sys.exit(1)
+	    video = cv2.VideoCapture(args["video"])
 
     while True:
         ret, frame = video.read()
